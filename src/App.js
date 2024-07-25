@@ -16,20 +16,18 @@ function App() {
     setIsUploading(true);
 
     const formData = new FormData();
-    for (let file of uploadedFiles) {
-      formData.append("files", file);
+    for (let i = 0; i < uploadedFiles.length; i++) {
+      formData.append("files", uploadedFiles[i]);
     }
 
     try {
       const response = await axios.post("/api/upload_files/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          "X-Requested-With": "XMLHttpRequest",
         },
-        withCredentials: true,
       });
       setIsUploading(false);
-      alert(response.data.message); // Show success message from the backend
+      alert(response.data.message);
     } catch (error) {
       console.error("Error uploading files:", error);
       setIsUploading(false);
@@ -90,7 +88,7 @@ function App() {
               color: "#186F65",
             }}
           >
-            SparkSoft HR
+            Ng Khai Development Corporation
           </Typography>
         </Box>
         <Box
