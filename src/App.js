@@ -41,31 +41,28 @@ function App() {
       const userQuery = userInput.trim();
       if (!userQuery) return;
 
-      setConversation([...conversation, { user: userQuery }]);
+      const newEntry = { user: userQuery };
+      setConversation([newEntry, ...conversation]);
       const response = await axios.post("/api/ask_ai/", {
         question: userQuery,
       });
       console.log("AI Response:", response.data); // Log the response
 
-      setConversation([
-        ...conversation,
-        {
-          user: userQuery,
-          ai: response.data.responses
-            .map((r) => `${r[1]}: ${r[0]}`)
-            .join("\n\n"),
-        },
-      ]);
+      const aiEntry = {
+        ...newEntry,
+        ai: response.data.responses
+          .map((r) => `${r[1]}: ${r[0]}`)
+          .join("\n\n"),
+      };
+      setConversation([aiEntry, ...conversation]);
       setUserInput("");
     } catch (error) {
       console.error("Error:", error);
-      setConversation([
-        ...conversation,
-        {
-          user: userInput,
-          ai: "An error occurred while fetching the response.",
-        },
-      ]);
+      const errorEntry = {
+        user: userInput,
+        ai: "An error occurred while fetching the response.",
+      };
+      setConversation([errorEntry, ...conversation]);
       setUserInput("");
     }
   };
