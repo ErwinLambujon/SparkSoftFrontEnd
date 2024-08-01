@@ -7,9 +7,10 @@ import axios from "axios";
 function App() {
   axios.defaults.baseURL = "http://localhost:8000";
   const [userInput, setUserInput] = useState("");
-  const [aiResponse, setAiResponse] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [conversation, setConversation] = useState([]);
+  const [followUpIndex, setFollowUpIndex] = useState(null);
+  const [followUpInput, setFollowUpInput] = useState("");
 
   const handleFileUpload = async (event) => {
     const uploadedFiles = event.target.files;
@@ -42,19 +43,20 @@ function App() {
       if (!userQuery) return;
 
       const newEntry = { user: userQuery };
-      setConversation([newEntry, ...conversation]);
+      setConversation((prev) => [newEntry, ...prev]);
+
       const response = await axios.post("/api/ask_ai/", {
         question: userQuery,
+        context: conversation,
       });
       console.log("AI Response:", response.data); // Log the response
 
       const aiEntry = {
         ...newEntry,
-        ai: response.data.responses
-          .map((r) => `${r[1]}: ${r[0]}`)
-          .join("\n\n"),
+        ai: response.data.responses.map((r) => `${r[1]}: ${r[0]}`).join("\n\n"),
       };
-      setConversation([aiEntry, ...conversation]);
+
+      setConversation((prev) => [aiEntry, ...prev.slice(1)]);
       setUserInput("");
     } catch (error) {
       console.error("Error:", error);
@@ -62,8 +64,55 @@ function App() {
         user: userInput,
         ai: "An error occurred while fetching the response.",
       };
-      setConversation([errorEntry, ...conversation]);
+      setConversation((prev) => [errorEntry, ...prev.slice(1)]);
       setUserInput("");
+    }
+  };
+
+  const handleFollowUpClick = async (index) => {
+    try {
+      const userQuery = followUpInput.trim();
+      if (!userQuery) return;
+
+      const newEntry = { user: userQuery };
+      const updatedConversation = [...conversation];
+      updatedConversation[index] = {
+        ...updatedConversation[index],
+        followUp: newEntry,
+      };
+      setConversation(updatedConversation);
+
+      const response = await axios.post("/api/ask_ai/", {
+        question: userQuery,
+        context: updatedConversation,
+      });
+      console.log("AI Response:", response.data); // Log the response
+
+      const aiEntry = {
+        ...newEntry,
+        ai: response.data.responses.map((r) => `${r[1]}: ${r[0]}`).join("\n\n"),
+      };
+      updatedConversation[index] = {
+        ...updatedConversation[index],
+        followUp: aiEntry,
+      };
+      setConversation(updatedConversation);
+      setFollowUpIndex(null);
+      setFollowUpInput("");
+    } catch (error) {
+      console.error("Error:", error);
+      const errorEntry = {
+        user: followUpInput,
+        ai: "An error occurred while fetching the response.",
+      };
+      const updatedConversation = [...conversation];
+      updatedConversation[index] = {
+        ...updatedConversation[index],
+        followUp: errorEntry,
+      };
+      setConversation(updatedConversation);
+      setFollowUpIndex(null);
+      setFollowUpInput("");
     }
   };
 
@@ -159,9 +208,39 @@ function App() {
                       <strong>User:</strong> {entry.user}
                     </div>
                     {entry.ai && (
-                      <div>
-                        <strong>AI:</strong> {entry.ai}
-                      </div>
+                      <>
+                        <div>
+                          <strong>AI:</strong> {entry.ai}
+                        </div>
+                        <div>
+                          <TextField
+                            id="outlined-basic"
+                            label="ASK MORE"
+                            variant="standard"
+                            value={index === followUpIndex ? followUpInput : ""}
+                            onChange={(e) => {
+                              setFollowUpIndex(index);
+                              setFollowUpInput(e.target.value);
+                            }}
+                          />
+                          <Button
+                            onClick={() => handleFollowUpClick(index)}
+                            startIcon={<ArrowForwardIcon />}
+                          >
+                            ASK MORE
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                    {entry.followUp && (
+                      <>
+                        <div>
+                          <strong>User:</strong> {entry.followUp.user}
+                        </div>
+                        <div>
+                          <strong>AI:</strong> {entry.followUp.ai}
+                        </div>
+                      </>
                     )}
                     <hr />
                   </div>
