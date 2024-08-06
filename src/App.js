@@ -134,7 +134,7 @@ function App() {
               color: "#186F65",
             }}
           >
-            Ng Khai Development Corporation
+            SparkSoft HR
           </Typography>
         </Box>
         <Box
